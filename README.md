@@ -24,23 +24,6 @@ flutter pub get
 flutter run
 ```
 
-`flutter create .` will scaffold `android/`, `ios/`, `web/`, etc. WITHOUT
-touching your existing `lib/`, `pubspec.yaml` (it merges — always safe on a
-fresh unzip). After that, add these platform-specific permissions:
-
-### Android (`android/app/src/main/AndroidManifest.xml`)
-Add inside `<manifest>`:
-```xml
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-<uses-permission android:name="android.permission.VIBRATE"/>
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-```
-
-### iOS (`ios/Runner/Info.plist`)
-No extra keys are required for local notifications beyond the default
-project; permission is requested at runtime via
-`NotificationService.requestPermissions()`.
-
 ## Project Structure (Feature-First + Clean Architecture)
 
 ```
