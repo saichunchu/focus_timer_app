@@ -17,13 +17,10 @@ for the app. Since this was built outside of a Flutter SDK environment, you
 need to generate the native platform folders once:
 
 ```bash
-# 1. Unzip this project, then from its root:
-flutter create . --project-name focus_timer_app --org com.yourcompany
-
-# 2. Install dependencies
+# 1. Install dependencies
 flutter pub get
 
-# 3. Run
+# 2. Run
 flutter run
 ```
 
