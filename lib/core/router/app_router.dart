@@ -10,10 +10,12 @@ import '../../features/history/presentation/screens/history_screen.dart';
 import '../../features/statistics/presentation/screens/statistics_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/custom_timers/presentation/screens/custom_timers_screen.dart';
+import '../../features/splash/presentation/splash_screen.dart';
 
 /// Route path constants — used across the app instead of magic strings.
 abstract class AppRoutes {
   AppRoutes._();
+  static const String splash = '/';
   static const String home = '/home';
   static const String statistics = '/statistics';
   static const String timer = '/timer';
@@ -31,9 +33,13 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.splash,
     debugLogDiagnostics: false,
     routes: [
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: AppRoutes.customTimers,
         parentNavigatorKey: _rootNavigatorKey,

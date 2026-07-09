@@ -9,6 +9,7 @@ import '../../../../core/utils/session_stats.dart';
 import '../../../custom_timers/domain/custom_timer_providers.dart';
 import '../../../history/domain/session_providers.dart';
 import '../../../settings/presentation/settings_providers.dart';
+import '../../../timer/presentation/strict_mode_guard.dart';
 import '../../../timer/presentation/widgets/custom_duration_sheet.dart';
 import '../widgets/goal_progress_card.dart';
 import '../widgets/greeting_header.dart';
@@ -48,8 +49,14 @@ class HomeScreen extends ConsumerWidget {
               child: TimerPresetsSection(
                 defaultMinutes: AppDefaults.defaultPresetsMinutes,
                 customPresets: customPresets,
-                onAddCustom: () => showCustomDurationSheet(context),
-                onManagePresets: () => context.push(AppRoutes.customTimers),
+                onAddCustom: () async {
+                  if (!await tryLeaveStrictSession(context, ref)) return;
+                  if (context.mounted) showCustomDurationSheet(context);
+                },
+                onManagePresets: () async {
+                  if (!await tryLeaveStrictSession(context, ref)) return;
+                  if (context.mounted) context.push(AppRoutes.customTimers);
+                },
               ),
             ),
             SliverToBoxAdapter(child: MiniHeatmapPreview(dailyTotals: dailyTotals)),

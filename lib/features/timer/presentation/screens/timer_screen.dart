@@ -19,9 +19,8 @@ import '../widgets/timer_picker_view.dart';
 /// When navigated to with [launchArgs] (e.g. from a Home preset tap), the
 /// session is configured and started automatically.
 ///
-/// Also enforces Strict Focus Mode: intercepts the hardware back
-/// button/gesture while a session is active, and detects when the app is
-/// backgrounded to record (and optionally fail) the session.
+/// Strict Focus Mode enforcement (tab switches, system back, background exit)
+/// lives in [AppShell] so it applies app-wide.
 class TimerScreen extends ConsumerStatefulWidget {
   const TimerScreen({super.key, this.launchArgs});
 
@@ -31,14 +30,13 @@ class TimerScreen extends ConsumerStatefulWidget {
   ConsumerState<TimerScreen> createState() => _TimerScreenState();
 }
 
-class _TimerScreenState extends ConsumerState<TimerScreen> with WidgetsBindingObserver {
+class _TimerScreenState extends ConsumerState<TimerScreen> {
   late final ConfettiController _confettiController;
   TimerLaunchArgs? _lastHandledArgs;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybeHandleLaunchArgs(widget.launchArgs);
@@ -91,24 +89,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with WidgetsBindingOb
     controller.start();
   }
 
-  /// Strict Mode: the app was backgrounded mid-session.
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.paused) return;
-
-    final strictEnabled = ref.read(strictModeEnabledProvider);
-    final timerState = ref.read(timerControllerProvider);
-    if (!strictEnabled || timerState.status != TimerStatus.running) return;
-
-    final controller = ref.read(timerControllerProvider.notifier);
-    controller.registerInterruption();
-
-    final failOnExit = ref.read(strictModeFailOnExitProvider);
-    if (failOnExit) {
-      controller.stop();
-    }
-  }
-
   /// Strict Mode: the user tried to Stop a running/paused session.
   Future<void> _handleStopPressed(TimerRunState state) async {
     final strictEnabled = ref.read(strictModeEnabledProvider);
@@ -121,7 +101,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with WidgetsBindingOb
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _confettiController.dispose();
     super.dispose();
   }
@@ -131,7 +110,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with WidgetsBindingOb
     final state = ref.watch(timerControllerProvider);
     final controller = ref.read(timerControllerProvider.notifier);
     final strictModeEnabled = ref.watch(strictModeEnabledProvider);
-    final strictSessionActive = strictModeEnabled && state.isActive;
 
     ref.listen<TimerRunState>(timerControllerProvider, (previous, next) {
       final justCompleted = previous?.status != TimerStatus.completed &&
@@ -141,49 +119,38 @@ class _TimerScreenState extends ConsumerState<TimerScreen> with WidgetsBindingOb
       }
     });
 
-    return PopScope(
-      canPop: !strictSessionActive,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        final confirmed = await confirmLeaveStrictSession(context);
-        if (confirmed) {
-          await controller.stop();
-          if (context.mounted) Navigator.of(context).maybePop();
-        }
+    return Scaffold(
+      body: switch (state.status) {
+        TimerStatus.idle => TimerPickerView(
+            onSelectFocus: (minutes, {label, presetId}) {
+              controller.configure(minutes: minutes, label: label, presetId: presetId);
+              controller.start();
+            },
+            onSelectBreak: _startBreak,
+          ),
+        TimerStatus.running || TimerStatus.paused => ActiveTimerView(
+            state: state,
+            strictModeEnabled: strictModeEnabled,
+            onStop: () => _handleStopPressed(state),
+            onPauseResume: () {
+              if (state.isRunning) {
+                controller.pause();
+              } else {
+                controller.resume();
+              }
+            },
+          ),
+        TimerStatus.completed => TimerCompletionView(
+            confettiController: _confettiController,
+            completedType: state.type,
+            completedMinutes: state.totalSeconds ~/ 60,
+            onStartShortBreak: () =>
+                _startBreak(SessionType.shortBreak, AppDefaults.shortBreakMinutes),
+            onStartLongBreak: () =>
+                _startBreak(SessionType.longBreak, AppDefaults.longBreakMinutes),
+            onDone: controller.reset,
+          ),
       },
-      child: Scaffold(
-        body: switch (state.status) {
-          TimerStatus.idle => TimerPickerView(
-              onSelectFocus: (minutes, {label, presetId}) {
-                controller.configure(minutes: minutes, label: label, presetId: presetId);
-                controller.start();
-              },
-              onSelectBreak: _startBreak,
-            ),
-          TimerStatus.running || TimerStatus.paused => ActiveTimerView(
-              state: state,
-              strictModeEnabled: strictModeEnabled,
-              onStop: () => _handleStopPressed(state),
-              onPauseResume: () {
-                if (state.isRunning) {
-                  controller.pause();
-                } else {
-                  controller.resume();
-                }
-              },
-            ),
-          TimerStatus.completed => TimerCompletionView(
-              confettiController: _confettiController,
-              completedType: state.type,
-              completedMinutes: state.totalSeconds ~/ 60,
-              onStartShortBreak: () =>
-                  _startBreak(SessionType.shortBreak, AppDefaults.shortBreakMinutes),
-              onStartLongBreak: () =>
-                  _startBreak(SessionType.longBreak, AppDefaults.longBreakMinutes),
-              onDone: controller.reset,
-            ),
-        },
-      ),
     );
   }
 }

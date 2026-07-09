@@ -14,7 +14,8 @@ Future<bool> confirmLeaveStrictSession(BuildContext context) async {
       icon: const Icon(Icons.shield_outlined, color: AppColors.primary),
       title: const Text('Leave focus session?'),
       content: const Text(
-        "Strict Mode is on. Leaving now will end your session early and it'll be recorded as interrupted.",
+        "Strict Mode is on. Leaving now will end your session early and it'll be recorded as interrupted. "
+        'This includes switching tabs, pressing back, or leaving the app.',
       ),
       actions: [
         TextButton(
