@@ -17,32 +17,12 @@ for the app. Since this was built outside of a Flutter SDK environment, you
 need to generate the native platform folders once:
 
 ```bash
-# 1. Unzip this project, then from its root:
-flutter create . --project-name focus_timer_app --org com.yourcompany
-
-# 2. Install dependencies
+# 1. Install dependencies
 flutter pub get
 
-# 3. Run
+# 2. Run
 flutter run
 ```
-
-`flutter create .` will scaffold `android/`, `ios/`, `web/`, etc. WITHOUT
-touching your existing `lib/`, `pubspec.yaml` (it merges — always safe on a
-fresh unzip). After that, add these platform-specific permissions:
-
-### Android (`android/app/src/main/AndroidManifest.xml`)
-Add inside `<manifest>`:
-```xml
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-<uses-permission android:name="android.permission.VIBRATE"/>
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-```
-
-### iOS (`ios/Runner/Info.plist`)
-No extra keys are required for local notifications beyond the default
-project; permission is requested at runtime via
-`NotificationService.requestPermissions()`.
 
 ## Project Structure (Feature-First + Clean Architecture)
 
